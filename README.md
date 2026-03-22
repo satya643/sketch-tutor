@@ -1,46 +1,52 @@
-# SketchTutor AI 🎨
+# 🎨 SketchTutor AI (SketchMaster)
+Visit \`https://sketch-tutor-bt35.vercel.app/` to access the interactive studio!
 
-**Live Demo**: [Deploying to Vercel soon...]
+![Next.js](https://img.shields.io/badge/Next.js-Black?style=for-the-badge&logo=next.js&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
+![Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)
 
-This is my submission for the **Thinkly Labs Software Engineering Role**. I chose to build an **AI Art Teacher** because standard chatbot wrappers feel generic and uninspiring. The assignment asked for a chatbot that feels *purpose-built* for a specific subject, and art instruction requires highly specialized UX.
+An interactive, AI-powered drawing coach application. SketchTutor AI bridges the gap between passive video tutorials and personalized, real-time instruction.
 
-Instead of just chatting via a text box, an art student needs to see reference photos, understand proportions, get tool recommendations, and follow a structured step-by-step process. This chatbot behaves like an experienced art tutor sitting right next to you, watching an active canvas.
+## 🌟 What I Built
 
-## 🎨 Frontend Thinking
+**SketchTutor AI** takes any reference image you upload and automatically generates a professional, 4-stage pencil-drawing tutorial sequence (using highly constrained OpenAI image editing algorithms) showing you how to build the drawing from structural geometry to the final polished shading. 
 
-The UI was meticulously designed to reflect the focus and usability of a premium art tool, heavily inspired by interfaces like Procreate:
+Alongside the visual pipeline, the platform features **SketchMaster**, a multi-modal, conversational AI chatbot powered by Google Gemini 2.5 Flash-Lite. SketchMaster acts as your positive, adaptive drawing instructor. It natively "*sees*" the reference photo you upload and the exact sketch stage you are currently focusing on, allowing it to provide 100% contextual, step-by-step guidance in a friendly mix of Hindi and English.
 
-- **Interactive Micro-interactions**: The landing page features a completely custom, draggable Before/After slider built from scratch to showcase transformations intuitively.
-- **Loading & Empty States**: The Upload page features a pulsating analysis state with auto-updating progress. The Gallery defaults to a clear, encouraging empty state to guide the user to their first action.
-- **Real-time Chat Experience**: The AI tutor chat features a custom `ReadableStream` implementation to stream chunks from the API exactly like a production LLM, complete with contextual typing indicators and auto-scrolling. 
-- **Purpose-Built Canvas**: Instead of a static "Chat" screen, the Workspace features a 3-column split view keeping the grid-overlaid reference image, the *interactive live canvas* (built with `react-konva`), and the tutor chat visible simultaneously. You can actually draw on the canvas!
-- **Error Handling**: Graceful fallback UI in the chat if the API endpoint fails to respond.
-
-## 🤖 AI Usage
-
-For this build, I used AI heavily to generate the boilerplate Tailwind components, the mock Chat API streaming logic, and the intricate floating grid CSS. Because I directed the AI to solve the specific UX challenges of a drawing app (like the interactive `react-konva` canvas), there is zero "slop"—every component serves a strict functional and aesthetic purpose.
-
-## 🚀 How to Run Locally
-
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-2. **Run the development server**:
-   ```bash
-   npm run dev
-   ```
-
-3. **View the app**:
-   Open [http://localhost:3000](http://localhost:3000)
-
-## 📁 Key Files to Review
-
-* `src/app/api/chat/route.ts`: Purpose-built mock streaming LLM backend.
-* `src/components/AIChat.tsx`: Consumes the stream with auto-scrolling and typing states.
-* `src/components/StepCanvas.tsx`: Interactive freehand drawing tool.
-* `src/components/ImageComparison.tsx`: Custom draggable before/after slider.
+### Key Features:
+- **Automatic Structural Breakdown:** Instantly converts uploaded portraits/references into 4 sequential drawing stages (Guidelines & Construction $\rightarrow$ Block-ins $\rightarrow$ Line Art $\rightarrow$ Final Rendering).
+- **Multi-Modal Vision Chat:** The integrated chat UI passes both the original and generated images to the backend simultaneously. You can ask "how do I draw this eye?" and the AI knows exactly what you are looking at.
+- **Smart Fallback API Architecture:** The Node.js Next API routes intelligently balance keys and payloads across Google, OpenAI, and xAI to combat rate-limits gracefully without breaking the user experience.
+- **Adaptive Persona:** SketchMaster will break down complex art theories into bite-sized analogies ("jaise roti banate ho"), making art concepts highly accessible to beginners.
 
 ---
+
+## 🎯 Why I Picked This Topic
+
+Learning to draw is traditionally a frustrating and solitary experience. Beginners are often overwhelmed by the final result of an artwork because they cannot clearly "see" the underlying geometric structure (the proportions, forms, and values) that holds the piece together. 
+
+I picked this topic because **traditional art fundamentally relies on step-by-step logical deconstruction**, which makes it a perfect use-case for advanced multimodal Generative AI. 
+
+By building this application, I wanted to create an environment where:
+1. The intimidation factor of a blank canvas is entirely removed by visually extracting the foundational geometry from the user's specific reference image.
+2. The user has an endlessly patient, interactive 1-on-1 coach that doesn't just spew out a generic wall of text, but actively looks at the current stage they are drawing and answers micro-questions conversationally to keep them motivated.
+
+This project sits at the exciting intersection of structured Gen-AI image synthesis and multi-modal conversational context.
+
+## 🚀 Getting Started
+
+**Create a `.env.local` file with the following:**
+\`\`\`env
+OPENAI_API_KEY=your_openai_key    # Used to generate the 4-stage sketch layout
+GOOGLE_GENERATIVE_AI_API_KEY=...  # Used for the Vision Chat AI 
+\`\`\`
+
+**Run the local development server:**
+\`\`\`cmd
+npm install
+npm run dev
+\`\`\`
+Visit \`https://sketch-tutor-bt35.vercel.app/` to access the interactive studio!
+--
 Built with Next.js 15, React 19, Tailwind CSS v4, shadcn/ui, and React-Konva.
