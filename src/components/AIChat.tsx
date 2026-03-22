@@ -129,6 +129,16 @@ export function AIChat({
           );
         }
       }
+
+      // If stream finished but we got absolutely no content, it's likely a silent API error (like quota exhausted)
+      setMessages((prev) => {
+        const msg = prev.find(m => m.id === assistantMsgId);
+        if (msg && msg.content.trim() === "") {
+          return prev.map(m => m.id === assistantMsgId ? { ...m, content: "Oops! credit limit reached ! 😔" } : m);
+        }
+        return prev;
+      });
+
       setIsTyping(false);
     } catch (error) {
       console.error(error);
@@ -140,11 +150,16 @@ export function AIChat({
         displayMessage = "Oops! credit limit reached ! 😔";
       } else if (displayMessage.includes("No working API Keys")) {
         displayMessage = "Oops! credit limit reached ! 😔";
+      } else {
+        // Also handle arbitrary failures where message is blank
+        displayMessage = "Oops! Something went wrong! 😔";
       }
 
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === assistantMsgId ? { ...msg, content: displayMessage } : msg
+          msg.id === assistantMsgId
+            ? { ...msg, content: (msg.content.trim() === "" ? displayMessage : msg.content) }
+            : msg
         )
       );
     }
@@ -179,7 +194,9 @@ export function AIChat({
                 : "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
                 }`}>
                 {msg.content === "" && msg.role === "assistant" ? (
-                  <span className="w-1.5 h-4 bg-foreground/40 inline-block animate-pulse"></span>
+                  <div className="flex flex-row items-center gap-1 text-muted-foreground animate-pulse h-4 mt-1">
+                    <span className="text-xs font-medium italic pr-1">Thinking...</span>
+                  </div>
                 ) : (
                   <div className="chat-content space-y-2">
                     {msg.content.split('\n').map((line, i) => {

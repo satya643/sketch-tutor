@@ -1,5 +1,4 @@
 # 🎨 SketchTutor AI (SketchMaster)
-Visit \`https://sketch-tutor-bt35.vercel.app/` to access the interactive studio!
 
 ![Next.js](https://img.shields.io/badge/Next.js-Black?style=for-the-badge&logo=next.js&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
@@ -48,5 +47,3 @@ npm install
 npm run dev
 \`\`\`
 Visit \`https://sketch-tutor-bt35.vercel.app/` to access the interactive studio!
---
-Built with Next.js 15, React 19, Tailwind CSS v4, shadcn/ui, and React-Konva.
