@@ -18,14 +18,14 @@ function boldify(text: string): string {
     .replace(/`(.+?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>');
 }
 
-export function AIChat({ 
-  originalImage, 
-  stageImage, 
-  stageName 
-}: { 
-  originalImage?: string | null; 
-  stageImage?: string | null; 
-  stageName?: string; 
+export function AIChat({
+  originalImage,
+  stageImage,
+  stageName
+}: {
+  originalImage?: string | null;
+  stageImage?: string | null;
+  stageName?: string;
 } = {}) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -93,7 +93,7 @@ export function AIChat({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           messages: newMessages,
           context: { originalImage, stageImage, stageName }
         }),
@@ -133,13 +133,18 @@ export function AIChat({
     } catch (error) {
       console.error(error);
       setIsTyping(false);
-      const fallback =
-        error instanceof Error ? error.message : "Could not reach the chat service.";
+      const fallback = error instanceof Error ? error.message : "Could not reach the chat service.";
+
+      let displayMessage = fallback;
+      if (displayMessage.toLowerCase().includes("quota") || displayMessage.includes("429") || displayMessage.toLowerCase().includes("exhausted")) {
+        displayMessage = "Oops! credit limit reached ! 😔";
+      } else if (displayMessage.includes("No working API Keys")) {
+        displayMessage = "Oops! credit limit reached ! 😔";
+      }
+
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === assistantMsgId
-            ? { ...msg, content: fallback }
-            : msg
+          msg.id === assistantMsgId ? { ...msg, content: displayMessage } : msg
         )
       );
     }
@@ -170,8 +175,8 @@ export function AIChat({
                 }`}
             >
               <div className={`px-4 py-3 text-xs shadow-sm leading-relaxed ${msg.role === "assistant"
-                  ? "bg-muted/80 text-foreground rounded-2xl rounded-tl-sm border border-border/50"
-                  : "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
+                ? "bg-muted/80 text-foreground rounded-2xl rounded-tl-sm border border-border/50"
+                : "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
                 }`}>
                 {msg.content === "" && msg.role === "assistant" ? (
                   <span className="w-1.5 h-4 bg-foreground/40 inline-block animate-pulse"></span>

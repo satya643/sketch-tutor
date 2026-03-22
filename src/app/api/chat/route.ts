@@ -1,10 +1,11 @@
 import { google } from "@ai-sdk/google";
 import { streamText, type ModelMessage } from "ai";
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
 export const maxDuration = 30;
 
-type ChatTurn = { role: "user" | "assistant" | "system"; content: string };
+type ChatTurn = { role: "user" | "assistant" | "system"; content: string | any[] };
 
 function toChatTurns(raw: unknown): ChatTurn[] {
   if (!Array.isArray(raw)) return [];
@@ -14,69 +15,35 @@ function toChatTurns(raw: unknown): ChatTurn[] {
     const role = (m as { role?: string }).role;
     const content = (m as { content?: unknown }).content;
     if (role !== "user" && role !== "assistant") continue;
-    if (typeof content !== "string" || !content.trim()) continue;
+    if (typeof content !== "string" && !Array.isArray(content)) continue;
     out.push({ role, content });
   }
   return out;
 }
 
-const SYSTEM = `You are an expert AI Art Tutor and Drawing Coach named "SketchMaster". Your ONLY purpose is to teach users how to draw or recreate ANY reference image (photo, artwork, portrait, etc.) in a very detailed, easy-to-understand way — even if the user is a complete beginner.
+const SYSTEM = `You are an expert AI Art Tutor and Drawing Coach named "SketchMaster".
 
-When the user provides an image (or describes one), you MUST ALWAYS respond in this exact structured format — no exceptions, no shortcuts:
+CRITICAL RULES FOR RESPONDING:
 
-**1. Overall Impression & Key Features**  
-Give a short, positive summary of what makes the image special (e.g., mood, lighting, colors, emotion). Keep it 2-4 sentences. Encourage the user: "This is a beautiful reference — let's break it down so you can draw it confidently!"
+SCENARIO 1: The user just says a greeting like "Hi", "Hello", "Hey".
+-> ACTION: DO NOT analyze the images. DO NOT give a tutorial. Just reply with: "Hi! I'm SketchMaster, your drawing coach! 🎨 Are you ready to recreate this image? You can ask me for a full tutorial, or ask a specific question about any stage!"
 
-**2. Materials & Tools Suggestion** (for traditional drawing)  
-Quick list: pencil types (HB, 2B, etc.), paper, eraser, or digital tools (Procreate, Photoshop brush settings). Keep simple for beginners.
+SCENARIO 2: The user asks a SPECIFIC question or follows up (e.g. "how do I draw the eyes?", "samajh nahi aaya", "what pencil to use?").
+-> ACTION: DO NOT use the 6-part structure! Simply answer their question directly in 3-4 short lines. Use simple analogies (jaise "roti banate ho"). End with: "Kya yeh samajh aa gaya? 😊"
 
-**3. Step-by-Step Drawing Guide**  
-Break the drawing process into 8–12 clear, numbered steps. Start from basic shapes → proportions → details → shading. Use simple language like you're teaching a friend:
-- Use basic geometry (circles, ovals, lines) for construction.
-- Explain proportions (e.g., "The eyes are halfway down the head").
-- Cover pose, facial features, clothing folds, hair flow.
-- Include shading & lighting tips (where shadows fall, highlights).
-- For each step: Describe WHAT to draw + WHY it matters + HOW to do it slowly.
+SCENARIO 3: The user EXPLICITLY asks for a full guide, "explain this", or "how to draw this image".
+-> ACTION: You MUST use this exact 6-part format:
+**1. Overall Impression & Key Features**  (Short positive summary)
+**2. Materials & Tools Suggestion** (Pencils, paper, etc.)
+**3. Step-by-Step Drawing Guide** (Clear numbered steps)
+**4. Detailed Prompt for AI Image Recreation** (Optimized prompt for generation)
+**5. Common Mistakes & Pro Tips** (Pitfalls beginners make)
+**6. Encouragement & Next Steps** (Motivate the user to try)
 
-**4. Detailed Prompt for AI Image Recreation** (if user wants to generate similar image)  
-Write a highly detailed, optimized prompt (150–400 words) for tools like Flux, Midjourney, Stable Diffusion, Leonardo, etc. Include: subject, appearance, clothing, pose, expression, lighting, background, style (photorealistic/digital/pencil sketch), quality boosters (8k, sharp focus, detailed skin). Add negative prompt if helpful.
-
-**5. Common Mistakes & Pro Tips**  
-List 3–5 pitfalls beginners make (e.g., wrong proportions, flat shading) + how to avoid/fix them. Add 2–3 variations (e.g., change angle, style, mood).
-
-**6. Encouragement & Next Steps**  
-End positively: Motivate the user to try it, ask for their drawing/photo to give feedback, suggest practicing one part first.
-
-Rules you MUST follow:
-- Always use this exact response structure (do not skip or change order):
-   **Hi! I'm SketchMaster, your drawing coach. Let's make this together! 🎨**
-   **1. Overall Impression**
-   **2. Materials Suggestion**
-   **3. Step-by-Step Drawing Guide** (8–12 clear steps)
-   **4. AI Image Prompt** (detailed for Flux/Midjourney/etc.)
-   **5. Common Mistakes & Tips**
-   **6. Your Turn!** (encouragement + ask for feedback)
-- Be extremely patient and adaptive:
-   - If the user says something like "samajh nahi aaya", "aur simple batao", "ye step clear nahi", "phir se samjhao", "confused hoon", etc. → DO NOT repeat the same explanation.
-   - Instead, make it **even simpler**, use **shorter sentences**, **more everyday words**, **more examples from daily life** (jaise "pencil se halka sa gol circle banao jaise roti banate ho"), **fewer technical words**.
-   - Break one confusing step into 2–3 tiny baby steps.
-   - Add analogies (e.g., "hair ko draw karna jaise waterfall ki tarah flow karna").
-- Never assume the user understood.
-   - At the end of EVERY response, always ask:
-     "Kya ab yeh step samajh aa gaya? 😊"
-     "Koi confusion hai to batao, main aur easy tareeke se samjha dunga!"
-     "Apna sketch bhej do to main feedback de sakta hoon!"
-- Only move forward or add new info when the user says:
-   - "samajh aa gaya", "clear hai", "ok", "next step", "theek hai", "continue", etc.
-   - If user is still confused → stay on the same confusing part and simplify more.
-- Language: Mix Hindi + simple English if user is using Hindi. Keep sentences short. Be fun and positive always — like a best friend teaching drawing.
-- ALWAYS be encouraging, patient, and positive — never say something is "hard" or "impossible".
-- Use simple English (avoid jargon; explain terms like "value" = light/dark).
-- Be extremely detailed but step-by-step — aim for beginners who have never drawn before.
-- Stay in character as SketchMaster — fun, supportive art teacher vibe.
-- Never skip the structure or add extra sections.
-- If no image yet, politely ask: "Reference photo dikhao ya describe karo, main sikhaunga kaise draw karna hai!"
-- Start every response with: "Hi! I'm SketchMaster, your drawing coach. Let's recreate this image together step by step! 🎨"`;
+General Rules:
+- Mix Hindi + simple English if user communicates in Hindi.
+- Be extremely patient, positive, and encouraging like a best friend.
+- Never give the 6-part tutorial automatically just because an image is attached. Only do it if requested.`;
 
 export async function POST(req: Request) {
   try {
@@ -86,9 +53,14 @@ export async function POST(req: Request) {
     if (body.context && coreMessages.length > 0) {
       const lastUserMsgIdx = coreMessages.map(m => m.role).lastIndexOf("user");
       if (lastUserMsgIdx !== -1) {
-        const text = coreMessages[lastUserMsgIdx].content;
+        let text = coreMessages[lastUserMsgIdx].content;
+        if (Array.isArray(text)) {
+           // stringify if it's already an array
+           text = text.map(t => typeof t === "string" ? t : t.text || "").join(" ");
+        }
+        
         const stageContext = body.context.stageName 
-          ? `[System Context: The user is currently looking at the sketch stage "${body.context.stageName}". Analyze the attached reference images to provide stage-specific guidance.]\\n\\n` 
+          ? `[System Context: The user is currently looking at the sketch stage "${body.context.stageName}". Analyze the attached reference images to provide stage-specific guidance.]\n\n` 
           : "";
         
         const multimodalContent: any[] = [
@@ -110,26 +82,90 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No valid messages" }, { status: 400 });
     }
 
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      const encoder = new TextEncoder();
-      const stream = new ReadableStream({
-        async start(controller) {
-          const content =
-            "The chat endpoint requires GOOGLE_GENERATIVE_AI_API_KEY in .env.local.";
-          controller.enqueue(encoder.encode(content));
-          controller.close();
-        },
-      });
-      return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+    // 1. TRY GOOGLE GEMINI FIRST
+    if (process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim()) {
+      try {
+        const googleMessages = coreMessages.map(msg => {
+          if (typeof msg.content === "string") return msg;
+          return {
+            ...msg,
+            content: msg.content.map((part: any) => {
+               if (part.type === "image" && typeof part.image === "string" && part.image.startsWith("data:")) {
+                  const base64 = part.image.split(",")[1];
+                  const buffer = Buffer.from(base64, "base64");
+                  return { type: "image", image: new Uint8Array(buffer) };
+               }
+               return part;
+            })
+          };
+        });
+
+        const result = streamText({
+          model: google("gemini-2.5-flash-lite"),
+          messages: googleMessages as ModelMessage[],
+          system: SYSTEM,
+        });
+        return result.toTextStreamResponse();
+      } catch (err: any) {
+        console.error("Gemini failed, trying fallback...", err);
+      }
     }
 
-    const result = streamText({
-      model: google("gemini-2.5-flash-lite"),
-      messages: coreMessages as ModelMessage[],
-      system: SYSTEM,
-    });
+    // 2. TRY OPENAI OR XAI SECOND
+    const fallbackKey = process.env.OPENAI_API_KEY?.trim() || process.env.XAI_API_KEY?.trim();
+    const isXAI = !process.env.OPENAI_API_KEY?.trim() && !!process.env.XAI_API_KEY?.trim();
+    
+    if (fallbackKey) {
+      const openai = new OpenAI({
+         apiKey: fallbackKey,
+         baseURL: isXAI ? "https://api.x.ai/v1" : undefined
+      });
 
-    return result.toTextStreamResponse();
+      // Map to OpenAI format
+      const openaiMessages = [
+        { role: "system", content: SYSTEM },
+        ...coreMessages.map((msg) => {
+          if (typeof msg.content === "string") return msg;
+          // map multimodal
+          return {
+            role: msg.role,
+            content: msg.content.map((part: any) => {
+               if (part.type === "text") return part;
+               if (part.type === "image") return { type: "image_url", image_url: { url: part.image } };
+               return part;
+            })
+          };
+        })
+      ] as any;
+
+      const response = await openai.chat.completions.create({
+        model: isXAI ? "grok-vision-beta" : "gpt-4o-mini",
+        messages: openaiMessages,
+        stream: true,
+      });
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          const encoder = new TextEncoder();
+          try {
+            for await (const chunk of response) {
+              const content = chunk.choices[0]?.delta?.content || "";
+              if (content) controller.enqueue(encoder.encode(content));
+            }
+          } catch (err) {
+            console.error("Fallback stream error:", err);
+            controller.error(err);
+          } finally {
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" } });
+    }
+
+    return NextResponse.json({ error: "No working API Keys found in Environment Variables." }, { status: 500 });
+
   } catch (error: any) {
     console.error("Chat error:", error);
     return NextResponse.json({ error: error.message || "Failed to process chat" }, { status: 500 });
