@@ -76,6 +76,12 @@
 }
 
 @layer base {
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
   * {
     @apply border-border outline-ring/50;
   }
